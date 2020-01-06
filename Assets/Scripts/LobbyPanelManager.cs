@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using SocketIO;
 
-public class LobbyPanelManager : PanelManager {
+public class LobbyPanelManager : PanelManager 
+{
     [SerializeField] Button joinButton;             // 방 입장
     [SerializeField] Button unJoinButton;           // 방 나가기
     [SerializeField] Button readyButton;            // 준비
@@ -14,12 +15,16 @@ public class LobbyPanelManager : PanelManager {
 
     public enum LobbyState { None, Lobby, RoomNotReady, RoomReady, Play }
     private LobbyState currentLobbyState = LobbyState.None;
-    private LobbyState CurrentLobbyState {
-        get {
+    private LobbyState CurrentLobbyState 
+    {
+        get 
+        {
             return currentLobbyState;
         }
-        set {
-            switch (value) {
+        set 
+        {
+            switch (value) 
+            {
                 case LobbyState.None:
                 {
                     joinButton.gameObject.SetActive(false);
@@ -84,14 +89,16 @@ public class LobbyPanelManager : PanelManager {
     private ClientInfo clientInfo;                  // 클라이언트의 socket id와 room id 저장할 변수
 
 #region MonoBehaviour methods
-    private void Start() {
+    private void Start() 
+    {
         InitSocket();
     }
 #endregion
 
 #region Socket.io methods
     // Socket의 초기화
-    private void InitSocket() {
+    private void InitSocket() 
+    {
         GameObject socketObject = GameObject.Find("SocketIO");
         socket = socketObject.GetComponent<SocketIOComponent>();
 
@@ -110,7 +117,8 @@ public class LobbyPanelManager : PanelManager {
         socket.On("res_otherunready", EventOtherUnReady);           // 내 방에서 다른 누군가가 준비취소 했을 때
     }
 
-    private void EventConnect(SocketIOEvent e) {
+    private void EventConnect(SocketIOEvent e) 
+    {
         string clientId = e.data.GetField("clientId").str;
         clientInfo = new ClientInfo(clientId, null);
         SetLog("서버에 접속함. ClientId: " + clientId);
@@ -118,7 +126,8 @@ public class LobbyPanelManager : PanelManager {
         CurrentLobbyState = LobbyState.Lobby;
     }
     
-    private void EventCreateRoom(SocketIOEvent e) {
+    private void EventCreateRoom(SocketIOEvent e) 
+    {
         string roomId = e.data.GetField("roomId").str;
         clientInfo.roomId = roomId;
         SetLog("방 생성함. RoomId: " + roomId);
@@ -126,20 +135,26 @@ public class LobbyPanelManager : PanelManager {
         CurrentLobbyState = LobbyState.RoomNotReady;
     }
 
-    private void EventJoinRoom(SocketIOEvent e) {
+    private void EventJoinRoom(SocketIOEvent e) 
+    {
         string roomId = e.data.GetField("roomId").str;
-        string otherClientId = e.data.GetField("otherClientId").str;
+        JSONObject otherClientIds = e.data.GetField("otherClientIds");
         int clientsNumber = -1;
         e.data.GetField(ref clientsNumber, "clientsNumber");
 
         clientInfo.roomId = roomId;
         SetLog("방에 참여함. RoomId: " + roomId + " (" + clientsNumber + "/2)");
-        SetLog("기존 유저 ID: " + otherClientId);
+        SetLog("--------유저 목록--------");
+        foreach (JSONObject o in otherClientIds.list)
+        {
+            SetLog("유저명: " + o.str);
+        }
 
         CurrentLobbyState = LobbyState.RoomNotReady;
     }
 
-    private void EventUnJoinRoom(SocketIOEvent e) {
+    private void EventUnJoinRoom(SocketIOEvent e) 
+    {
         string roomId = e.data.GetField("roomId").str;
         clientInfo.roomId = null;
         SetLog("[" + roomId + "] 방에서 빠져나옴.");
@@ -147,12 +162,14 @@ public class LobbyPanelManager : PanelManager {
         CurrentLobbyState = LobbyState.Lobby;
     }
 
-    private void EventReady(SocketIOEvent e) {
+    private void EventReady(SocketIOEvent e) 
+    {
         SetLog("준비완료");
         CurrentLobbyState = LobbyState.RoomReady;
     }
 
-    private void EventUnReady(SocketIOEvent e) {
+    private void EventUnReady(SocketIOEvent e) 
+    {
         SetLog("준비취소");
         CurrentLobbyState = LobbyState.RoomNotReady;
     }
@@ -162,7 +179,8 @@ public class LobbyPanelManager : PanelManager {
         CurrentLobbyState = LobbyState.Play;
     }
 
-    private void EventOtherJoinRoom(SocketIOEvent e) {
+    private void EventOtherJoinRoom(SocketIOEvent e) 
+    {
         string roomId = e.data.GetField("roomId").str;
         string otherClientId = e.data.GetField("otherClientId").str;
         int clientsNumber = -1;
@@ -170,17 +188,20 @@ public class LobbyPanelManager : PanelManager {
         SetLog("[" + otherClientId + "] 님이 방에 참여함. (" + clientsNumber + "/2)");
     }
 
-    private void EventOtherUnJoinRoom(SocketIOEvent e) {
+    private void EventOtherUnJoinRoom(SocketIOEvent e) 
+    {
         string otherClientId = e.data.GetField("otherClientId").str;
         SetLog("[" + otherClientId + "] 님이 방에서 나감");
     }
 
-    private void EventOtherReady(SocketIOEvent e) {
+    private void EventOtherReady(SocketIOEvent e) 
+    {
         string otherClientId = e.data.GetField("otherClientId").str;
         SetLog("[" + otherClientId + "] 님 준비완료");
     }
 
-    private void EventOtherUnReady(SocketIOEvent e) {
+    private void EventOtherUnReady(SocketIOEvent e) 
+    {
         string otherClientId = e.data.GetField("otherClientId").str;
         SetLog("[" + otherClientId + "] 님 준비취소");
     }
@@ -188,14 +209,16 @@ public class LobbyPanelManager : PanelManager {
 #endregion
 
 #region OnClick Events
-    public void OnClickJoin(Button button) {
+    public void OnClickJoin(Button button) 
+    {
         button.interactable = false;
 
         JSONObject data = new JSONObject();
         data.AddField("clientId", clientInfo.clientId);
         socket.Emit("req_joinroom", data);
     }
-    public void OnClickUnJoin(Button button) {
+    public void OnClickUnJoin(Button button) 
+    {
         button.interactable = false;
 
         if (clientInfo.roomId != null) {
@@ -207,7 +230,8 @@ public class LobbyPanelManager : PanelManager {
             // TODO: 오류표시
         }
     }
-    public void OnClickReady(Button button) {
+    public void OnClickReady(Button button) 
+    {
         button.interactable = false;
 
         JSONObject data = new JSONObject();
@@ -215,7 +239,8 @@ public class LobbyPanelManager : PanelManager {
         data.AddField("roomId", clientInfo.roomId);
         socket.Emit("req_ready", data);
     }
-    public void OnClickUnReady(Button button) {
+    public void OnClickUnReady(Button button) 
+    {
         button.interactable = false;
 
         JSONObject data = new JSONObject();
@@ -226,7 +251,8 @@ public class LobbyPanelManager : PanelManager {
 #endregion
 
 #region Etc.
-    private void SetLog(string message) {
+    private void SetLog(string message) 
+    {
         Text logText = scrollRect.content.GetComponent<Text>();
         logText.text += message + "\n";
         Invoke("SetScrollDown", 0.1f);
